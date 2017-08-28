@@ -19,5 +19,5 @@ cost : float
     v_pred_tang = sqrt(sum(v_pred.^2, 1));
     e = norm((v - v_pred), 'fro').^2;
     e_tang = norm((tv(:) - v_pred_tang(:)), 'fro').^2;
-    cost = e + e_tang;
+    cost = e + 2*e_tang;
 end

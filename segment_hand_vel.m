@@ -22,7 +22,7 @@ try
         s = segments(k,1);
         e = segments(k,2);
 
-        if (max(max(abs(hand_vel(s:e, :)))) > min_ampl) && (e-s)*DT >= 0.2
+        if (max(max(abs(hand_vel(s:e, :)))) > min_ampl) % && (e-s)*DT >= 0.2
             keep_inds = [keep_inds, k];
         end
     end

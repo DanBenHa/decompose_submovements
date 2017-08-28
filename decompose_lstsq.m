@@ -138,6 +138,8 @@ function [best_cost, bestresult, bestfitresult, n_iterations, n_func_evals] = de
 
     % check that there's a feasible set  
     if any(lb > ub)
+        lb
+        ub
         error('Lower bounds exceed upper bound - infeasible');
     end
 

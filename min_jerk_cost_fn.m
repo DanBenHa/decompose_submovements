@@ -13,7 +13,7 @@ function [cost, grad, v_pred, M] = min_jerk_cost_fn(parameters, times, v, tv)
         F(time_inds, n) = MJxy(t0, D, 1, 1, t);
     end
 
-    ridge = eye(n_movements)*0.5; % should corespond to |M| < 0.5 (roughly)
+    ridge = eye(n_movements)*0.001; % should corespond to |M| < 0.5 (roughly)
     M = ((F'*F + ridge) \ F') * v;
 
     full_params = [parameters, M];

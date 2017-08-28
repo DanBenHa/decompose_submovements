@@ -72,9 +72,11 @@ defaults = {'verbose', 1, ...
     'fn_type', 'min_jerk', ...
     'vel_inds', [3,4], ...
     'D_min', 0.150, ...
+    'D_max', 1.0,...
     'proc_idx', 1, ...
     'n_procs', 1 ...
     'zero_greed', 0, ...
+    'segment_movements', 1, ...
 };
 
 prev_decomp     = get_var('prev_decomp', 'defaults', defaults, varargin{:});
@@ -90,9 +92,11 @@ use_cost_diff   = get_var('use_cost_diff', 'defaults', defaults, varargin{:});
 fn_type         = get_var('fn_type', 'defaults', defaults, varargin{:});
 vel_inds        = get_var('vel_inds', 'defaults', defaults, varargin{:});
 D_min           = get_var('D_min', 'defaults', defaults, varargin{:});
+D_max           = get_var('D_max', 'defaults', defaults, varargin{:});
 proc_idx        = get_var('proc_idx', 'defaults', defaults, varargin{:});
 n_procs         = get_var('n_procs', 'defaults', defaults, varargin{:});
 zero_greed      = get_var('zero_greed', 'defaults', defaults, varargin{:});
+segment_movements      = get_var('segment_movements', 'defaults', defaults, varargin{:});
 
 %% Error checking on parameters
 valid_methods = {'scattershot', 'greedy'};
@@ -113,12 +117,20 @@ DT = bin_size_ms*1e-3;
 %% Movement segmentation
 %%%%%%%%%%%%%%%%%%%%%%%%
 hand_vel = hand_kin(:,vel_inds);
-segments = segment_hand_vel(hand_vel, 'DT', DT, 'still_threshold', still_threshold, 'min_ampl', min_ampl);
-minSegLength = floor(0.200/DT); % minimum segment length
 
-% make sure segments have sufficient length
-segLengths = segments(:,2)-segments(:,1);
-segments(segLengths < minSegLength,:) = [];
+if segment_movements
+    segments = segment_hand_vel(hand_vel, 'DT', DT, 'still_threshold', still_threshold, 'min_ampl', min_ampl);
+    segments
+    minSegLength = floor(D_min/DT) % minimum segment length
+
+    % make sure segments have sufficient length
+    segLengths = segments(:,2)-segments(:,1);
+    segments(segLengths < minSegLength,:) = [];
+else
+    segments = [1, length(hand_vel)];
+end
+
+segments
 
 n_segments = size(segments, 1);
 segments_per_proc = ceil(n_segments/n_procs);
@@ -166,7 +178,7 @@ for k=inds
             
             %%% Determine the maximum number of submovements
             seg_len = e-s;
-            max_submovements = max(ceil((seg_len*DT - D_min)/max(isi, 0.1)), 1);
+            max_submovements = max(ceil((seg_len*DT - D_min)/isi), 1);
             if ~iterate_n_submovements
                 max_submovements = min(max_submovements, n_submovements);
             end
@@ -191,7 +203,7 @@ for k=inds
 
                 [costs_tr(m), bestresult{m}, bestfitresult{m}, n_iterations_(m), n_func_evals_(m)] = decompose_lstsq(t, ...
                     hand_vel_tr, submov_iter_idx, 'prev_decomp', prev_decomp, 'term_cond', orig_error*mse_perc_thresh, ...
-                    'fn_type', fn_type, 'sample_randomly', sample_randomly, 'isi', isi);
+                    'fn_type', fn_type, 'sample_randomly', sample_randomly, 'isi', isi, 'D_min', D_min, 'D_max', D_max);
                 
                 prev_decomp = bestresult{m};
                 costs_so_far(submov_iter_idx) = costs_tr(m) / orig_error;
